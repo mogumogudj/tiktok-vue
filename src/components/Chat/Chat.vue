@@ -1,6 +1,6 @@
 <script setup>
  // import ref
-    import { ref, reactive, onMounted } from 'vue';
+    import { ref, reactive, onMounted, onBeforeMount } from 'vue';
 
     let message = ref(""); // int, string or boolean
     let allMessages = reactive({
@@ -8,6 +8,8 @@
     }); // array or object
 
     let messages = ref([]);
+    let newComment = ref('');
+    const userCommentsKey = 'userComments';
 
     // function to send a message
     const sendMessage = () => {
@@ -25,6 +27,29 @@
   }
 });
 
+// load user comments from local storage on component mount
+onBeforeMount(() => {
+  const storedComments = localStorage.getItem(userCommentsKey);
+  if (storedComments) {
+    messages.value = JSON.parse(storedComments).concat(messages.value);
+  }
+});
+
+
+
+// function to add a new comment
+const addMessage = () => {
+  if (newComment.value.trim() !== '') {
+    messages.value.unshift({ user: 'You', text: newComment.value });
+    // Save user messages to local storage
+    const updatedComments = JSON.stringify(messages.value.slice(0, 10)); // Keep only the latest 10 messages
+    localStorage.setItem(userCommentsKey, updatedComments);
+    newComment.value = ''; // Clear the input field after adding the message
+  }
+};
+
+
+
     </script>
 
 <template>
@@ -36,6 +61,15 @@
     <div>
 
         <div class="chat">
+
+          <div class="add-comment">
+      <input v-model="newComment" placeholder="Add your message" />
+      <button @click="addMessage">Submit</button>
+    </div>
+
+
+
+
     <div v-for="message in messages" :key="message._id" class="message">
       <span class="username">{{ message.user }}:</span>
       <span class="text">{{ message.text }}</span>
@@ -43,9 +77,6 @@
   </div>
 
 
-        <!-- v-model is a shorthand for :value and @input event listener which allows us to update the value of the message variable -->
-        <input v-model="message" type="text" placeholder="" />
-        <button @click="sendMessage">Send</button>
     </div>
   </div>
 </template>
@@ -66,6 +97,10 @@
 .username {
   font-weight: bold;
   margin-right: 5px;
+}
+
+.add-comment {
+  margin-bottom: 10px;
 }
 
 </style>
