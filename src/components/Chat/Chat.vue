@@ -3,19 +3,56 @@
     import { ref, reactive, onMounted, onBeforeMount } from 'vue';
 
     let message = ref(""); // int, string or boolean
-    // let allMessages = reactive({
-    //     data: ["Heel", "Veel", "Berichten"],
-    // }); // array or object
 
     let messages = ref([]);
     let newComment = ref('');
     const userCommentsKey = 'userComments';
 
+
+
+
+
     // function to send a message
-    const sendMessage = () => {
-        allMessages.data.push(message.value);
-        message.value = "";
-    };
+    const sendMessage = async () => {
+  try {
+    const response = await fetch('https://lab5-p379.onrender.com/api/v1/messages/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        user: 'You',
+        text: newComment.value,
+      }),
+    });
+
+    if (response.ok) {
+      // Fetch the updated messages from the server after posting the new comment
+      const updatedMessagesResponse = await fetch('https://lab5-p379.onrender.com/api/v1/messages/');
+      const updatedMessages = await updatedMessagesResponse.json();
+
+      // Update the local messages array with the new data
+      messages.value = updatedMessages;
+
+      // Save user messages to local storage
+      const updatedComments = JSON.stringify(messages.value.slice(0, 10));
+      localStorage.setItem(userCommentsKey, updatedComments);
+
+      newComment.value = ''; // Clear the input field after adding the message
+
+      console.log('Message sent successfully:', messages.value);
+    } else {
+      console.error('Failed to send message:', response.statusText);
+    }
+  } catch (error) {
+    console.error('Error sending message:', error);
+  }
+};
+
+
+
+
+
     
     onMounted(async () => {
   try {
@@ -34,19 +71,6 @@ onBeforeMount(() => {
     messages.value = JSON.parse(storedComments).concat(messages.value);
   }
 });
-
-
-
-// function to add a new comment
-const addMessage = () => {
-  if (newComment.value.trim() !== '') {
-    messages.value.unshift({ user: 'You', text: newComment.value });
-    // save user messages to local storage
-    const updatedComments = JSON.stringify(messages.value.slice(0, 10)); // keep only the latest 10 messages
-    localStorage.setItem(userCommentsKey, updatedComments);
-    newComment.value = ''; // clear the input field after adding the message
-  }
-};
 
 
 
@@ -70,7 +94,7 @@ const addMessage = () => {
 
     <div class="add-comment">
       <input v-model="newComment" placeholder="Add your message" />
-      <button @click="addMessage">Submit</button>
+      <button @click="sendMessage">Submit</button>
     </div>
     </div>
   </div>
